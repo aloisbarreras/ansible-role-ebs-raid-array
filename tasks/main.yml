@@ -34,7 +34,7 @@
     opts: -L {{ raid_name }}
 
 - name: Ensure RAID array is reassembled automatically on boot.
-  command: mdadm --detail --scan | tee -a /etc/mdadm.conf
+  shell: mdadm --detail --scan | tee -a /etc/mdadm.conf
   changed_when: false
   when: sh_ls_raid_dev.stdout_lines.count(raid_dev) == 0
 
