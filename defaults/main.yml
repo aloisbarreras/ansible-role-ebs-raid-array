@@ -1,0 +1,9 @@
+---
+# defaults file for pgalchemy.ebs-raid-array
+raid_dev: /dev/md0
+raid_level: 0
+raid_name: my-raid-array
+raid_mount: /mnt/md0
+raid_devices:
+  - /dev/xvdf
+  - /dev/xvdg

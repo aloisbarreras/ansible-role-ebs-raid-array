@@ -1,0 +1,62 @@
+---
+- name: yum update
+  yum:
+    name: '*'
+    state: latest
+
+- name: install dependencies
+  yum:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - mdadm
+
+- name: Check existence of a RAID device
+  shell: ls {{ raid_dev }}
+  register: sh_ls_raid_dev
+  changed_when: false
+  failed_when: false
+  check_mode: no
+
+- name: Create a RAID device
+  shell: yes | mdadm --create --verbose "{{ raid_dev }}" --level="{{ raid_level }}" --name="{{ raid_name }}" --raid-devices={{ raid_devices | length }} {{ raid_devices | join(' ') }}
+  when: sh_ls_raid_dev.stdout_lines.count("{{ raid_dev }}") == 0
+
+- name: Print the details of a RAID device
+  shell: mdadm --detail "{{ raid_dev }}"
+  changed_when: false
+  check_mode: no
+
+- name: create filesystem
+  filesystem:
+    fstype: ext4
+    dev: "{{ raid_dev }}"
+    opts: -L {{ raid_name }}
+
+- name: Ensure RAID array is reassembled automatically on boot.
+  command: mdadm --detail --scan | tee -a /etc/mdadm.conf
+  changed_when: false
+  when: sh_ls_raid_dev.stdout_lines.count("{{ raid_dev }}") == 0
+
+- name: Create new ramdisk image to properly preload the block device modules for RAID
+  shell: dracut -H -f /boot/initramfs-$(uname -r).img $(uname -r)
+  changed_when: false
+  when: sh_ls_raid_dev.stdout_lines.count("{{ raid_dev }}") == 0
+
+- name: Create the mount point of a RAID device
+  file:
+    state: directory
+    path: "{{ raid_mount }}"
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Mount a RAID device
+  mount:
+    name: "{{ raid_mount }}"
+    src: LABEL="{{ raid_name }}"
+    fstype: ext4
+    opts: defaults
+    dump: 0
+    passno: 2
+    state: mounted
