@@ -20,7 +20,7 @@
 
 - name: Create a RAID device
   shell: yes | mdadm --create --verbose "{{ raid_dev }}" --level="{{ raid_level }}" --name="{{ raid_name }}" --raid-devices={{ raid_devices | length }} {{ raid_devices | join(' ') }}
-  when: sh_ls_raid_dev.stdout_lines.count("{{ raid_dev }}") == 0
+  when: sh_ls_raid_dev.stdout_lines.count(raid_dev) == 0
 
 - name: Print the details of a RAID device
   shell: mdadm --detail "{{ raid_dev }}"
@@ -36,7 +36,7 @@
 - name: Ensure RAID array is reassembled automatically on boot.
   command: mdadm --detail --scan | tee -a /etc/mdadm.conf
   changed_when: false
-  when: sh_ls_raid_dev.stdout_lines.count("{{ raid_dev }}") == 0
+  when: sh_ls_raid_dev.stdout_lines.count(raid_dev) == 0
 
 - name: Create new ramdisk image to properly preload the block device modules for RAID
   shell: dracut -H -f /boot/initramfs-$(uname -r).img $(uname -r)
